@@ -166,8 +166,7 @@ test for Universal Clipboard.
   useractivityd observes `com.apple.system.lowpowermode` and logs
   ` ** LowPowerMode is enabled so no activity will be advertised. ** `, with override
   key `EnableHandoffInPowerSaverMode`. A device in Low Power Mode can still paste from
-  others, but its own copies never reach them. That was the symptom on this setup:
-  iPhone → Mac dead, Mac → iPhone fine. **Inferred**: iOS shares this code path.
+  others, but its own copies never reach them. **Inferred**: iOS shares this code path.
 - Universal Clipboard is **off during Screen Sharing sessions**:
   `##### Screen Sharing session in progress, Universal Clipboard is disabled`. **Seen**
 - Advertising is delayed on screen saver, screen dim, and device lock
@@ -216,13 +215,46 @@ interface Apple leaves open, `NSPasteboard`:
 - Respects `org.nspasteboard.ConcealedType` and `TransientType`, which are also present in
   the system's shared cache.
 
-## 8. Open questions
+## 8. Receive side, observed (iPhone → Mac)
 
-- **Does the Mac's `changeCount` bump as soon as the iPhone copies, before anything pastes
-  on the Mac?** **Inferred** yes: Spotlight's clipboard history checks the remote marker,
-  and pboard receives a push (`Sending client xpc remote available update`). No iPhone copy
-  happened during this session, so it's not confirmed. Run `osascript -l JavaScript scripts/pbwatch.js`
-  and copy on the iPhone: a `remote=true` line confirms it.
+**Seen** on 2026-10-18. An iPhone copy appears on the Mac pasteboard *immediately*, with
+`com.apple.is-remote-clipboard` (`scripts/pbwatch.js` printed `remote=true`), before
+anything pastes. The types are fetched eagerly; the data is fetched when something reads it:
+
+```
+19:25:50.787 [PBOARD] Notify client of new remote pboard and reset timmer
+19:25:50.789 [pasteboard-fetch] Created remote generation 11D686AC-…
+19:25:50.789 [PBOARD CONTROLLER] Sending client xpc remote available update: YES
+19:25:50.789 [REMOTE GEN] Fetching remote type info
+19:25:50.821 [REMOTE GEN] Received type info                       ← 32 ms over Rapport
+19:25:50.823 [REMOTE GEN] Setting protocol version: 2
+19:25:52.134 [PBOARD CONTROLLER] Requesting data from remote device
+19:25:52.161 [FILE MANAGER] Creating file for remote pasteboard blob at path: <private>
+19:26:18.498 [PBOARD CONTROLLER] Sending client xpc remote available update: NO
+```
+
+## 9. Troubleshooting: one direction dead
+
+**Seen**, same day. Mac → iPhone worked, but iPhone → Mac didn't. The Mac's logs showed
+iPhone Handoff advertisements arriving and decrypting (`Successfully decrypted advertisement`),
+but every one had `SFActivityAdvertiserOptionFlagCopyPasteKey = 0`. A live capture during an
+iPhone copy showed *no* new advertisement at all, so the iPhone wasn't announcing copies.
+
+- **Not the cause:** Low Power Mode was off, and turning Handoff off and on didn't help.
+- **Fix:** restarting the iPhone.
+
+To check which side is at fault, run:
+
+```sh
+log show --last 1h --style compact --predicate \
+  'process == "useractivityd" AND eventMessage CONTAINS "RECEIVED advertisement"'
+```
+
+- **No `CopyPasteKey = 1` after an iPhone copy:** the iPhone isn't advertising. Restart it.
+- **`CopyPasteKey = 1` but no `Created remote generation`:** the Mac is dropping it.
+
+## 10. Open questions
+
 - On-air BLE bytes and the `UCStreamCoderV2` framing were not captured or decoded.
 - Whether infrastructure Wi-Fi can replace AWDL for the stream.
 - macOS 26 pasteboard privacy: `NSPasteboard.accessBehavior` was `2` (always allow) here.
