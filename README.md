@@ -198,12 +198,8 @@ On all of them:
 clipboard-unifier run
 ```
 
-Machines on the same network find each other over mDNS. If multicast is blocked (some
-Wi-Fi, VPNs, WSL), connect them directly:
-
-```bash
-clipboard-unifier run --peer my-mac.local     # or an IP address; default port 47321
-```
+Machines on the same local network find each other over mDNS. Anywhere else, see
+[Using it across networks](#using-it-across-networks).
 
 Copy something on the iPhone, then paste on the PC.
 
@@ -219,6 +215,32 @@ osascript -l JavaScript scripts/pbwatch.js
 
 A line with `remote=true` means iPhone copies are reaching the Mac. `clipboard-unifier doctor`
 reports the Handoff and paste-permission state.
+
+### Using it across networks
+
+There are two separate limits, one from Apple and one from clipboard-unifier:
+
+| Link | What it needs | Whose limit |
+|---|---|---|
+| **iPhone ↔ Mac** | The iPhone must be within Bluetooth range of the Mac (about 10 m), with Wi-Fi and Bluetooth on. They **don't** need to share a Wi-Fi network: the transfer uses Apple's peer-to-peer Wi-Fi (AWDL). | Apple's |
+| **Mac ↔ PCs** | Any network route to the Mac. Automatic discovery only works on the same local network. | clipboard-unifier's |
+
+- **Same local network:** there's nothing to configure.
+- **Different networks:** put the machines on a VPN such as [Tailscale](https://tailscale.com)
+  or WireGuard, and point each PC at the Mac's VPN address. The connection works in both
+  directions, so only one side needs `--peer`:
+
+  ```bash
+  clipboard-unifier run --peer 100.101.102.103    # the Mac's Tailscale IP; default port 47321
+  ```
+
+  Use `--peer` the same way when a shared network blocks multicast (some office or hotel
+  Wi-Fi, WSL).
+- **Over the open internet:** use a VPN rather than forwarding port 47321 on your router.
+  Traffic is always encrypted, but a VPN keeps the port off the public internet.
+
+Running over a VPN should work but hasn't been tested yet. Only IPv4 is supported for now,
+which Tailscale addresses are.
 
 To start automatically at login, see [docs/autostart.md](docs/autostart.md) (launchd,
 systemd, Task Scheduler).
@@ -275,6 +297,17 @@ Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 ## Limitations
 
 - **A Mac is required** for the iPhone leg (see [above](#why-windows-and-linux-cant-join-directly)).
+- **The iPhone must be near the Mac.** Apple requires Bluetooth range, about 10 m, though
+  not a shared Wi-Fi network. The PCs can be anywhere that can reach the Mac.
+- **The Mac must be awake and logged in.** The clipboard exists only inside a logged-in
+  session, so the bridge stops while the Mac sleeps or sits at the login window. On a laptop,
+  keep it on power and turn on System Settings → Battery → Options → "Prevent automatic
+  sleeping on power adapter when the display is off". macOS also has settings that delay
+  clipboard advertising while the screen saver runs, the display is dimmed, or the Mac is
+  locked (`DeviceLockPasteboardAdvertisementDelay` and related settings in
+  `useractivityd`), so iPhone pastes can lag in those states.
+- **Peers need a network route to the Mac.** Automatic discovery covers one local network
+  only. Elsewhere, use `--peer` over a VPN ([details](#using-it-across-networks)).
 - **There's a two-minute window to paste on the iPhone.** That's Apple's 120 s Universal
   Clipboard expiry.
 - **iPhone clips are fetched as soon as they're copied**, not when you paste, so they can
@@ -295,6 +328,20 @@ Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 No. The iPhone talks only to the Mac, using Apple's own Universal Clipboard. Unlike
 clipboard-sync apps, nothing runs on the iPhone. iOS doesn't let apps read the clipboard in
 the background, which is why those apps need a manual Share step.
+
+</details>
+
+<details>
+<summary><strong>Do all my devices need to be on the same Wi-Fi?</strong></summary>
+
+No.
+
+- **The iPhone needs to be near the Mac** (Bluetooth range, about 10 m), but not on the
+  same network. Apple's Universal Clipboard moves the data over peer-to-peer Wi-Fi.
+- **The PCs need a network route to the Mac.** On the same local network they find it
+  automatically. Anywhere else, connect them with `--peer` over a VPN like Tailscale. See
+  [Using it across networks](#using-it-across-networks).
+- **The Mac has to stay awake and logged in** for the bridge to run.
 
 </details>
 
