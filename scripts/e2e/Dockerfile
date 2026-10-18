@@ -9,6 +9,6 @@ FROM debian:bookworm-slim
 RUN apt-get update \
  && apt-get install -y --no-install-recommends xvfb xclip \
  && rm -rf /var/lib/apt/lists/*
-COPY --from=build /src/target/release/clipbridge /usr/local/bin/clipbridge
+COPY --from=build /src/target/release/clipboard-unifier /usr/local/bin/clipboard-unifier
 COPY scripts/e2e/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]

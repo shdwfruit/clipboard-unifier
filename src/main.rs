@@ -1,9 +1,9 @@
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
-use clipbridge::clipboard::{self, WriteOptions};
-use clipbridge::config::{self, Config, DEFAULT_PORT};
-use clipbridge::crypto::Secret;
-use clipbridge::node::{Node, NodeConfig};
+use clipboard_unifier::clipboard::{self, WriteOptions};
+use clipboard_unifier::config::{self, Config, DEFAULT_PORT};
+use clipboard_unifier::crypto::Secret;
+use clipboard_unifier::node::{Node, NodeConfig};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -11,13 +11,13 @@ use tracing::info;
 
 #[derive(Parser)]
 #[command(
-    name = "clipbridge",
+    name = "clipboard-unifier",
     version,
     about = "Share your clipboard between Mac, Windows and Linux — and, through the Mac's \
              Universal Clipboard, your iPhone."
 )]
 struct Cli {
-    /// Config file (default: platform config dir/clipbridge/config.toml).
+    /// Config file (default: platform config dir/clipboard-unifier/config.toml).
     #[arg(long, global = true)]
     config: Option<PathBuf>,
     #[command(subcommand)]
@@ -35,7 +35,7 @@ enum Cmd {
         #[arg(long)]
         force: bool,
     },
-    /// Join an existing group using a pairing code from `clipbridge init`.
+    /// Join an existing group using a pairing code from `clipboard-unifier init`.
     Join {
         code: String,
         #[arg(long)]
@@ -87,14 +87,20 @@ fn main() -> Result<()> {
             let cfg = Config::new(&Secret::generate(), name);
             cfg.save(&path, force)?;
             println!("Created {}\n", path.display());
-            println!("On each other machine, run:\n\n    clipbridge join {}\n", cfg.code);
-            println!("Then start the bridge everywhere with `clipbridge run`.");
+            println!(
+                "On each other machine, run:\n\n    clipboard-unifier join {}\n",
+                cfg.code
+            );
+            println!("Then start the bridge everywhere with `clipboard-unifier run`.");
             println!("Keep the code private: anyone with it can read your clipboard.");
         }
         Cmd::Join { code, name, force } => {
             let cfg = Config::new(&Secret::from_code(&code)?, name);
             cfg.save(&path, force)?;
-            println!("Joined. Saved {}\nStart the bridge with `clipbridge run`.", path.display());
+            println!(
+                "Joined. Saved {}\nStart the bridge with `clipboard-unifier run`.",
+                path.display()
+            );
         }
         Cmd::Code => println!("{}", load(&path)?.code),
         Cmd::Doctor => doctor(&path),
@@ -115,14 +121,14 @@ fn main() -> Result<()> {
 fn load(path: &Path) -> Result<Config> {
     if !path.exists() {
         bail!(
-            "no config at {} — run `clipbridge init` on one machine and `clipbridge join <code>` on the others",
+            "no config at {} — run `clipboard-unifier init` on one machine and `clipboard-unifier join <code>` on the others",
             path.display()
         );
     }
     Config::load(path)
 }
 
-/// The group can come from `CLIPBRIDGE_CODE` (handy for containers) or the config file.
+/// The group can come from `CLIPBOARD_UNIFIER_CODE` (handy for containers) or the config file.
 fn node_config(
     path: &Path,
     peers: Vec<String>,
@@ -130,9 +136,9 @@ fn node_config(
     discovery: bool,
     max_mb: usize,
 ) -> Result<NodeConfig> {
-    let (secret, device_id, name, cfg_port) = match std::env::var("CLIPBRIDGE_CODE") {
+    let (secret, device_id, name, cfg_port) = match std::env::var("CLIPBOARD_UNIFIER_CODE") {
         Ok(code) => (
-            Secret::from_code(&code).context("CLIPBRIDGE_CODE")?,
+            Secret::from_code(&code).context("CLIPBOARD_UNIFIER_CODE")?,
             config::new_device_id(),
             config::default_name(),
             DEFAULT_PORT,
@@ -159,7 +165,7 @@ async fn run(cfg: NodeConfig, opts: WriteOptions) -> Result<()> {
     let discovery = cfg.discovery;
     let node = Node::start(cfg, Box::new(move || clipboard::platform_backend(opts))).await?;
     info!(
-        "clipbridge {} running as \"{name}\" on {} (clipboard: {}, discovery: {})",
+        "clipboard-unifier {} running as \"{name}\" on {} (clipboard: {}, discovery: {})",
         env!("CARGO_PKG_VERSION"),
         node.local_addr,
         node.backend,
@@ -168,7 +174,11 @@ async fn run(cfg: NodeConfig, opts: WriteOptions) -> Result<()> {
     #[cfg(target_os = "macos")]
     info!(
         "iPhone/iPad copies arrive here via Universal Clipboard and are forwarded{}",
-        if opts.local_only { "" } else { "; clips from other machines are offered back to them" }
+        if opts.local_only {
+            ""
+        } else {
+            "; clips from other machines are offered back to them"
+        }
     );
     tokio::signal::ctrl_c().await?;
     info!("shutting down");
@@ -177,7 +187,11 @@ async fn run(cfg: NodeConfig, opts: WriteOptions) -> Result<()> {
 }
 
 fn doctor(path: &Path) {
-    println!("clipbridge {} on {}", env!("CARGO_PKG_VERSION"), std::env::consts::OS);
+    println!(
+        "clipboard-unifier {} on {}",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS
+    );
     match load(path) {
         Ok(cfg) => println!(
             "config: {} (name \"{}\", port {})",
@@ -204,7 +218,12 @@ fn doctor(path: &Path) {
 fn mac_handoff_status() {
     let read = |key: &str| {
         std::process::Command::new("defaults")
-            .args(["-currentHost", "read", "com.apple.coreservices.useractivityd", key])
+            .args([
+                "-currentHost",
+                "read",
+                "com.apple.coreservices.useractivityd",
+                key,
+            ])
             .output()
             .ok()
             .filter(|o| o.status.success())
@@ -217,7 +236,11 @@ fn mac_handoff_status() {
     };
     let adv = read("ActivityAdvertisingAllowed");
     let recv = read("ActivityReceivingAllowed");
-    println!("Handoff (Universal Clipboard): advertising {}, receiving {}", show(&adv), show(&recv));
+    println!(
+        "Handoff (Universal Clipboard): advertising {}, receiving {}",
+        show(&adv),
+        show(&recv)
+    );
     if adv.as_deref() == Some("0") || recv.as_deref() == Some("0") {
         println!(
             "  → turn on System Settings → General → AirDrop & Handoff → \"Allow Handoff between \

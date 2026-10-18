@@ -25,7 +25,7 @@ const CONCEALED_TYPES: &[&str] = &[
 ];
 
 /// Added to everything we write, so our own writes are recognisable.
-const APPLIED_MARKER: &str = "dev.clipbridge.applied";
+const APPLIED_MARKER: &str = "dev.clipboard-unifier.applied";
 
 const TEXT: &str = "public.utf8-plain-text";
 const PNG: &str = "public.png";
@@ -152,8 +152,8 @@ impl ClipboardBackend for MacClipboard {
                     let data = NSData::with_bytes(bytes);
                     let ok = pb.setData_forType(Some(&data), &ns(PNG));
                     // Older apps only read TIFF.
-                    if let Some(tiff) =
-                        NSBitmapImageRep::imageRepWithData(&data).and_then(|r| r.TIFFRepresentation())
+                    if let Some(tiff) = NSBitmapImageRep::imageRepWithData(&data)
+                        .and_then(|r| r.TIFFRepresentation())
                     {
                         pb.setData_forType(Some(&tiff), &ns(TIFF));
                     }
@@ -189,10 +189,12 @@ impl ClipboardBackend for MacClipboard {
         autoreleasepool(|_| {
             let pb = NSPasteboard::generalPasteboard();
             match access_behavior(&pb) {
-                Some(b @ (NSPasteboardAccessBehavior::Ask | NSPasteboardAccessBehavior::AlwaysDeny)) => {
+                Some(
+                    b @ (NSPasteboardAccessBehavior::Ask | NSPasteboardAccessBehavior::AlwaysDeny),
+                ) => {
                     vec![format!(
                         "pasteboard access is \"{}\": macOS may block clipboard reads — allow \
-                         clipbridge in System Settings → Privacy & Security → Paste from Other Apps",
+                         clipboard-unifier in System Settings → Privacy & Security → Paste from Other Apps",
                         describe_access(b)
                     )]
                 }

@@ -29,7 +29,7 @@ pub trait ClipboardBackend {
     /// Replace the clipboard with content received from a peer.
     fn write(&mut self, content: &Content) -> Result<()>;
 
-    /// Extra lines for `clipbridge doctor`. Must not include clipboard contents.
+    /// Extra lines for `clipboard-unifier doctor`. Must not include clipboard contents.
     fn diagnostics(&mut self) -> Vec<String> {
         Vec::new()
     }

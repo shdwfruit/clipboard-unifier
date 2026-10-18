@@ -44,7 +44,7 @@ impl MockClipboard {
         self.0.lock().unwrap().current.clone()
     }
 
-    /// Everything clipbridge wrote to this clipboard, in order.
+    /// Everything clipboard-unifier wrote to this clipboard, in order.
     pub fn writes(&self) -> Vec<Content> {
         self.0.lock().unwrap().writes.clone()
     }

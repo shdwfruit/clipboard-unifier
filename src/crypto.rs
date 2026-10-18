@@ -5,9 +5,9 @@ use data_encoding::BASE32_NOPAD;
 use hkdf::Hkdf;
 use sha2::Sha256;
 
-const CODE_PREFIX: &str = "cb1-";
+const CODE_PREFIX: &str = "cu1-";
 
-/// The 32-byte group secret shared by every machine in a clipbridge group.
+/// The 32-byte group secret shared by every machine in a clipboard-unifier group.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Secret([u8; 32]);
 
@@ -20,7 +20,7 @@ impl Secret {
         Self(bytes)
     }
 
-    /// Human-shareable pairing code, e.g. `cb1-abcd-efgh-...`.
+    /// Human-shareable pairing code, e.g. `cu1-abcd-efgh-...`.
     pub fn to_code(&self) -> String {
         let b32 = BASE32_NOPAD.encode(&self.0).to_lowercase();
         let groups: Vec<&str> = b32
@@ -60,12 +60,12 @@ impl Secret {
 
     /// Pre-shared key for the Noise handshake.
     pub fn psk(&self) -> [u8; 32] {
-        self.derive(b"clipbridge v1 psk")
+        self.derive(b"clipboard-unifier v1 psk")
     }
 
     /// Public group identifier advertised over mDNS (does not reveal the secret).
     pub fn group_id(&self) -> String {
-        hex::encode(&self.derive(b"clipbridge v1 group")[..8])
+        hex::encode(&self.derive(b"clipboard-unifier v1 group")[..8])
     }
 }
 
@@ -83,17 +83,17 @@ mod tests {
     fn code_round_trips() {
         let s = Secret::generate();
         let code = s.to_code();
-        assert!(code.starts_with("cb1-"));
+        assert!(code.starts_with("cu1-"));
         assert_eq!(Secret::from_code(&code).unwrap(), s);
         // Case and separators don't matter.
-        let sloppy = format!("  cb1-{}  ", code[4..].replace('-', "").to_uppercase());
+        let sloppy = format!("  cu1-{}  ", code[4..].replace('-', "").to_uppercase());
         assert_eq!(Secret::from_code(&sloppy).unwrap(), s);
     }
 
     #[test]
     fn rejects_bad_codes() {
         assert!(Secret::from_code("hello").is_err());
-        assert!(Secret::from_code("cb1-abcd").is_err());
+        assert!(Secret::from_code("cu1-abcd").is_err());
     }
 
     #[test]

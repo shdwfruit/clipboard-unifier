@@ -1,4 +1,4 @@
-//! LAN discovery via mDNS / DNS-SD (`_clipbridge._tcp.local.`).
+//! LAN discovery via mDNS / DNS-SD (`_clipunifier._tcp.local.`).
 
 use crate::proto::DeviceId;
 use anyhow::Result;
@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use tokio::sync::mpsc;
 
-pub const SERVICE: &str = "_clipbridge._tcp.local.";
+pub const SERVICE: &str = "_clipunifier._tcp.local.";
 
 pub enum Found {
     Peer {
@@ -45,7 +45,7 @@ pub fn start(
         .filter(|c| *c != '.')
         .take(60)
         .collect();
-    let host = format!("clipbridge-{}.local.", &id_hex[..12]);
+    let host = format!("clipunifier-{}.local.", &id_hex[..12]);
     let props = HashMap::from([
         ("g".to_string(), group.clone()),
         ("id".to_string(), id_hex),

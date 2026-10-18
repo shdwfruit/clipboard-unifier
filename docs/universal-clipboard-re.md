@@ -195,18 +195,18 @@ Research directions, not built:
 - **Full peer:** pypush-style IDS registration + OWL + the TLS stream protocol. This is high
   effort, likely against Apple's terms, and likely to break.
 
-## 7. What clipbridge does with this
+## 7. What clipboard-unifier does with this
 
-The Mac is already a legitimate Universal Clipboard peer, so clipbridge uses the one
+The Mac is already a legitimate Universal Clipboard peer, so clipboard-unifier uses the one
 interface Apple leaves open, `NSPasteboard`:
 
 - **iPhone → PC:** an iPhone copy lands on the Mac pasteboard flagged
-  `com.apple.is-remote-clipboard`. clipbridge sees the `changeCount` bump, reads it (which
+  `com.apple.is-remote-clipboard`. clipboard-unifier sees the `changeCount` bump, reads it (which
   triggers the AWDL fetch), and sends it to peers.
-- **PC → iPhone:** clipbridge writes received content as an ordinary local copy. pboard →
+- **PC → iPhone:** clipboard-unifier writes received content as an ordinary local copy. pboard →
   useractivityd → BLE advertisement, so the iPhone can paste it within 120 s.
   **Seen** in the Mac ↔ Linux e2e run:
-  - clipbridge wrote the Linux text at generation 51 (19:03:09.381), and
+  - clipboard-unifier wrote the Linux text at generation 51 (19:03:09.381), and
     `ADVERTISING … UAPasteboardAvailable = 1 … pb-1` followed at 19:03:10.061.
   - The next write (an image, gen 52) flipped the bit to `pb-0` within 3 ms.
   - Advertisement updates appear coalesced to at most one per second.

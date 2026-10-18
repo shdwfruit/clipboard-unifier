@@ -1,4 +1,4 @@
-//! clipbridge: extend Apple's Universal Clipboard to Windows and Linux by using a Mac as
+//! clipboard-unifier: extend Apple's Universal Clipboard to Windows and Linux by using a Mac as
 //! the bridge. See README.md and docs/design.md.
 
 pub mod clipboard;

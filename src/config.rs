@@ -66,7 +66,7 @@ impl Config {
 }
 
 pub fn default_path() -> Result<PathBuf> {
-    let dirs = directories::ProjectDirs::from("", "", "clipbridge")
+    let dirs = directories::ProjectDirs::from("", "", "clipboard-unifier")
         .context("could not determine a config directory")?;
     Ok(dirs.config_dir().join("config.toml"))
 }

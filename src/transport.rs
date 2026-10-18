@@ -152,8 +152,14 @@ mod tests {
         a: &Secret,
         b: &Secret,
     ) -> (
-        Result<(NoiseReader<tokio::io::DuplexStream>, NoiseWriter<tokio::io::DuplexStream>)>,
-        Result<(NoiseReader<tokio::io::DuplexStream>, NoiseWriter<tokio::io::DuplexStream>)>,
+        Result<(
+            NoiseReader<tokio::io::DuplexStream>,
+            NoiseWriter<tokio::io::DuplexStream>,
+        )>,
+        Result<(
+            NoiseReader<tokio::io::DuplexStream>,
+            NoiseWriter<tokio::io::DuplexStream>,
+        )>,
     ) {
         let (x, y) = tokio::io::duplex(1 << 20);
         let (pa, pb) = (a.psk(), b.psk());

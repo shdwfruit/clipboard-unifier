@@ -1,4 +1,4 @@
-# clipbridge — design
+# clipboard-unifier — design
 
 ## Intent
 
@@ -6,16 +6,16 @@ Apple's Universal Clipboard syncs copy/paste between a Mac and an iPhone signed 
 same Apple Account. It is built on Handoff (BLE advertisements + peer-to-peer Wi-Fi + keys
 provisioned through iCloud), so a Windows or Linux machine cannot join it directly.
 
-clipbridge extends it: the Mac — which is already a Universal Clipboard peer — becomes a
+clipboard-unifier extends it: the Mac — which is already a Universal Clipboard peer — becomes a
 bridge. Copy on the iPhone → the Mac's pasteboard receives it via Universal Clipboard →
-clipbridge sends it to Windows/Linux. Copy on Windows/Linux → clipbridge writes it to the
+clipboard-unifier sends it to Windows/Linux. Copy on Windows/Linux → clipboard-unifier writes it to the
 Mac's pasteboard → macOS advertises it to the iPhone like any local copy.
 
 See `universal-clipboard-re.md` for the reverse-engineering findings this is based on.
 
 ## Goals
 
-- One binary (`clipbridge`) for macOS, Windows, and Linux (X11 and Wayland).
+- One binary (`clipboard-unifier`) for macOS, Windows, and Linux (X11 and Wayland).
 - Text and images (PNG on the wire).
 - Zero-config on a LAN: mDNS discovery, a pairing code shared once.
 - End-to-end encrypted, mutually authenticated by the pairing secret.
@@ -36,7 +36,7 @@ See `universal-clipboard-re.md` for the reverse-engineering findings this is bas
 
 ```
 iPhone ──(Apple Universal Clipboard: BLE + AWDL)── Mac ──┐
-                                                         ├─ clipbridge mesh (TCP + Noise, LAN)
+                                                         ├─ clipboard-unifier mesh (TCP + Noise, LAN)
                                          Windows ────────┤
                                          Linux ──────────┘
 ```
@@ -45,7 +45,7 @@ iPhone ──(Apple Universal Clipboard: BLE + AWDL)── Mac ──┐
   `Noise_NNpsk0_25519_ChaChaPoly_BLAKE2s` handshake, PSK = HKDF-SHA256(pairing secret).
   A peer without the secret cannot complete the handshake. App messages are length-prefixed
   and chunked across Noise transport frames (max 65535 bytes each).
-- **Discovery:** mDNS-SD service `_clipbridge._tcp.local.` with TXT `g=<group id>` (derived
+- **Discovery:** mDNS-SD service `_clipunifier._tcp.local.` with TXT `g=<group id>` (derived
   from the secret, so it isn't the secret itself), `id=<device id>`, `v=1`. Static peers
   (`--peer host:port`) for networks where multicast is blocked.
 - **Engine:** poll the local clipboard (cheap change tokens: `NSPasteboard.changeCount` on

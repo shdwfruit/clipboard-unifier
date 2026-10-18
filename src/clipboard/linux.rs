@@ -20,7 +20,11 @@ pub struct LinuxClipboard {
 }
 
 fn text_fingerprint(s: &str) -> [u8; 32] {
-    Sha256::new().chain_update(b"t").chain_update(s).finalize().into()
+    Sha256::new()
+        .chain_update(b"t")
+        .chain_update(s)
+        .finalize()
+        .into()
 }
 
 fn image_fingerprint(width: usize, height: usize, rgba: &[u8]) -> [u8; 32] {

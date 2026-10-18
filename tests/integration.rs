@@ -1,10 +1,10 @@
 //! Multi-node tests on 127.0.0.1 with in-memory clipboards (no mDNS).
 
-use clipbridge::clipboard::ClipboardBackend;
-use clipbridge::clipboard::mock::MockClipboard;
-use clipbridge::crypto::Secret;
-use clipbridge::node::{Node, NodeConfig};
-use clipbridge::proto::Content;
+use clipboard_unifier::clipboard::ClipboardBackend;
+use clipboard_unifier::clipboard::mock::MockClipboard;
+use clipboard_unifier::crypto::Secret;
+use clipboard_unifier::node::{Node, NodeConfig};
+use clipboard_unifier::proto::Content;
 use std::time::Duration;
 
 struct TestNode {
@@ -94,7 +94,10 @@ async fn relays_through_a_middle_node() {
     wait_for(&hub.clip, &text("left → right")).await;
 
     settle().await;
-    assert!(left.clip.writes().is_empty(), "origin must not get its own clip back");
+    assert!(
+        left.clip.writes().is_empty(),
+        "origin must not get its own clip back"
+    );
     assert_eq!(right.clip.writes().len(), 1);
     assert_eq!(hub.clip.writes().len(), 1);
 }

@@ -1,4 +1,4 @@
-//! A running clipbridge node: clipboard thread + sync engine + listener + dialers.
+//! A running clipboard-unifier node: clipboard thread + sync engine + listener + dialers.
 
 use crate::clipboard::ClipboardBackend;
 use crate::config::DEFAULT_PORT;
@@ -193,7 +193,10 @@ async fn spawn_clipboard_thread(
                 match writes.recv_timeout(poll_interval) {
                     Ok(content) => {
                         if let Err(e) = backend.write(&content) {
-                            warn!("writing {} to the clipboard failed: {e:#}", content.describe());
+                            warn!(
+                                "writing {} to the clipboard failed: {e:#}",
+                                content.describe()
+                            );
                         }
                     }
                     Err(RecvTimeoutError::Timeout) => match backend.poll() {
@@ -222,7 +225,11 @@ struct Peer {
     tx: mpsc::Sender<Arc<Message>>,
 }
 
-fn broadcast(peers: &HashMap<DeviceId, Peer>, msg: &Arc<Message>, except: Option<DeviceId>) -> usize {
+fn broadcast(
+    peers: &HashMap<DeviceId, Peer>,
+    msg: &Arc<Message>,
+    except: Option<DeviceId>,
+) -> usize {
     let mut sent = 0;
     for (id, peer) in peers {
         if Some(*id) == except {
@@ -372,7 +379,11 @@ async fn run_connection(stream: TcpStream, outbound: bool, ctx: Arc<Ctx>) -> Res
         _ => bail!("peer did not say hello"),
     };
     if hello.protocol != PROTOCOL_VERSION {
-        bail!("{} speaks protocol v{}; we speak v{PROTOCOL_VERSION}", hello.name, hello.protocol);
+        bail!(
+            "{} speaks protocol v{}; we speak v{PROTOCOL_VERSION}",
+            hello.name,
+            hello.protocol
+        );
     }
     let peer_id = hello.device_id;
     if peer_id == ctx.self_id {
@@ -462,7 +473,13 @@ async fn run_connection(stream: TcpStream, outbound: bool, ctx: Arc<Ctx>) -> Res
     .await;
 
     read_task.abort();
-    let _ = ctx.events.send(Event::PeerDown { id: peer_id, conn_id }).await;
+    let _ = ctx
+        .events
+        .send(Event::PeerDown {
+            id: peer_id,
+            conn_id,
+        })
+        .await;
     match result {
         Ok(()) => info!("disconnected from {}", hello.name),
         Err(e) => info!("disconnected from {}: {e:#}", hello.name),
@@ -489,7 +506,9 @@ impl fmt::Display for Target {
 
 async fn connect(target: &Target) -> Result<TcpStream> {
     match target {
-        Target::Host(host) => Ok(timeout(CONNECT_TIMEOUT, TcpStream::connect(host.as_str())).await??),
+        Target::Host(host) => {
+            Ok(timeout(CONNECT_TIMEOUT, TcpStream::connect(host.as_str())).await??)
+        }
         Target::Addrs(addrs) => {
             let mut last_err = anyhow!("no addresses");
             for addr in addrs {
@@ -544,7 +563,11 @@ async fn follow_discovery(mut found: mpsc::UnboundedReceiver<Found>, ctx: Arc<Ct
     let mut dialers: HashMap<String, (Vec<SocketAddr>, JoinHandle<()>)> = HashMap::new();
     while let Some(event) = found.recv().await {
         match event {
-            Found::Peer { fullname, id, addrs } => {
+            Found::Peer {
+                fullname,
+                id,
+                addrs,
+            } => {
                 // Only the side with the lower id dials, so discovery doesn't open two
                 // connections between the same pair.
                 if ctx.self_id > id || addrs.is_empty() {
@@ -554,7 +577,11 @@ async fn follow_discovery(mut found: mpsc::UnboundedReceiver<Found>, ctx: Arc<Ct
                     continue;
                 }
                 debug!("discovered {fullname} at {addrs:?}");
-                let task = tokio::spawn(dial_loop(Target::Addrs(addrs.clone()), Some(id), ctx.clone()));
+                let task = tokio::spawn(dial_loop(
+                    Target::Addrs(addrs.clone()),
+                    Some(id),
+                    ctx.clone(),
+                ));
                 if let Some((_, old)) = dialers.insert(fullname, (addrs, task)) {
                     old.abort();
                 }

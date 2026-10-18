@@ -81,7 +81,15 @@ impl WinClipboard {
 
 impl ClipboardBackend for WinClipboard {
     fn name(&self) -> &'static str {
-        "Windows clipboard"
+        "Windows clipboard (experimental)"
+    }
+
+    fn startup_warnings(&mut self) -> Vec<String> {
+        vec![
+            "Windows support is experimental and hasn't been tested on real hardware yet — \
+             please report problems at https://github.com/shdwfruit/clipboard-unifier/issues"
+                .to_string(),
+        ]
     }
 
     fn poll(&mut self) -> Result<Option<Observed>> {
@@ -102,7 +110,9 @@ impl ClipboardBackend for WinClipboard {
             obs.content = match self.cb.get_text() {
                 Ok(text) if !text.is_empty() => Some(Content::Text(text)),
                 _ => match self.cb.get_image() {
-                    Ok(img) => Some(Content::Png(rgba_to_png(img.width, img.height, &img.bytes)?)),
+                    Ok(img) => Some(Content::Png(rgba_to_png(
+                        img.width, img.height, &img.bytes,
+                    )?)),
                     Err(_) => None,
                 },
             };
