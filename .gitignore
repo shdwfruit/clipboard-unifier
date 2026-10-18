@@ -1,0 +1,4 @@
+/target
+
+# Raw RE evidence: Apple binary strings and this Mac's device ids. Regenerate with scripts/re-collect.sh
+/research/
