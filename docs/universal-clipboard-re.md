@@ -124,6 +124,10 @@ test for Universal Clipboard.
 
 1. Paste on the receiver → `fetchRemotePasteboardTypesForProcess:` → sender logs
    `[PBOARD] Types Requested from remote <device-uuid>` (**Seen** 5× in 7 days on this Mac).
+   The types request is itself an 8-byte activity-payload command, **`pbtypes!`**
+   (**Seen** live: `Payload request for ad: {length = 8, bytes = 0x7062747970657321}, command: pbtypes`).
+   For small clips, the data travels inline in this reply: a 13-byte text produced a
+   1,787-byte reply with no follow-up request (**Inferred**, from sizes).
 2. `UASharedPasteboardDataRequester requestStreamEndpointData[V2]:` sends an **8-byte
    command**, `pbpaste!` (v1) or `pbpaste2` (v2), via
    `-[SFActivityScanner activityPayloadFromDevice:forAdvertisementPayload:command:timeout:withCompletionHandler:]`.
@@ -158,6 +162,12 @@ test for Universal Clipboard.
 
 - **Expiry is 120 s.** `Got type update` 18:19:09.08 → `Remove Local Types Fired` 18:21:09.08,
   18:23:13.88 → 18:25:13.88, 12:46:07.47 → 12:48:07.78. **Seen**
+- **Low Power Mode stops all advertising, clipboard included, but not receiving.** **Seen**:
+  useractivityd observes `com.apple.system.lowpowermode` and logs
+  ` ** LowPowerMode is enabled so no activity will be advertised. ** `, with override
+  key `EnableHandoffInPowerSaverMode`. A device in Low Power Mode can still paste from
+  others, but its own copies never reach them. That was the symptom on this setup:
+  iPhone → Mac dead, Mac → iPhone fine. **Inferred**: iOS shares this code path.
 - Universal Clipboard is **off during Screen Sharing sessions**:
   `##### Screen Sharing session in progress, Universal Clipboard is disabled`. **Seen**
 - Advertising is delayed on screen saver, screen dim, and device lock
