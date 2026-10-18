@@ -219,7 +219,17 @@ interface Apple leaves open, `NSPasteboard`:
 
 **Seen** on 2026-10-18. An iPhone copy appears on the Mac pasteboard *immediately*, with
 `com.apple.is-remote-clipboard` (`scripts/pbwatch.js` printed `remote=true`), before
-anything pastes. The types are fetched eagerly; the data is fetched when something reads it:
+anything pastes. Each iPhone copy bumps `changeCount` separately. Three copies 5–7 s apart
+gave 64, 65, and 66, each with these types:
+
+```
+[public.utf8-plain-text, NSStringPboardType, public.text, com.apple.is-remote-clipboard]
+```
+
+The marker is an ordinary pasteboard type on the item. `public.text` is the alias the
+sender adds (`Adding alias: public.text for type: public.utf8-plain-text`).
+
+The types are fetched eagerly; the data is fetched when something reads it:
 
 ```
 19:25:50.787 [PBOARD] Notify client of new remote pboard and reset timmer
